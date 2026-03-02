@@ -1164,12 +1164,41 @@
 
     <!-- Custom Modals -->
     <div class="custom-modal hidden" id="newMatchModal">
-        <div class="custom-modal-box">
+        <div class="custom-modal-box" style="min-width:300px">
             <h3>New Match</h3>
-            <input type="text" id="newMatchInput" placeholder="Opponent name..." autocomplete="off">
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+                <input type="text" id="newMatchInput" placeholder="Opponent name..." autocomplete="off">
+                <input type="text" id="newMatchDate" placeholder="Date (dd/mm/yy)" autocomplete="off" maxlength="8">
+                <div style="display:flex;gap:8px">
+                    <button id="newMatchHome" onclick="toggleHomeAway('home')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Home</button>
+                    <button id="newMatchAway" onclick="toggleHomeAway('away')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Away</button>
+                </div>
+                <input type="text" id="newMatchLocation" placeholder="Location" autocomplete="off">
+                <input type="text" id="newMatchCompetition" placeholder="Competition" autocomplete="off">
+            </div>
             <div class="custom-modal-btns">
                 <button class="custom-modal-cancel" onclick="closeNewMatchModal()">Cancel</button>
                 <button class="custom-modal-confirm" onclick="confirmNewMatch()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-modal hidden" id="editMatchInfoModal">
+        <div class="custom-modal-box" style="min-width:300px">
+            <h3>Edit Match Info</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+                <input type="text" id="editMatchOpponent" placeholder="Opponent name..." autocomplete="off">
+                <input type="text" id="editMatchDate" placeholder="Date (dd/mm/yy)" autocomplete="off" maxlength="8">
+                <div style="display:flex;gap:8px">
+                    <button id="editMatchHome" onclick="toggleEditHomeAway('home')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Home</button>
+                    <button id="editMatchAway" onclick="toggleEditHomeAway('away')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Away</button>
+                </div>
+                <input type="text" id="editMatchLocation" placeholder="Location" autocomplete="off">
+                <input type="text" id="editMatchCompetition" placeholder="Competition" autocomplete="off">
+            </div>
+            <div class="custom-modal-btns">
+                <button class="custom-modal-cancel" onclick="closeEditMatchInfoModal()">Cancel</button>
+                <button class="custom-modal-confirm" onclick="saveEditMatchInfo()">Save</button>
             </div>
         </div>
     </div>
@@ -1668,15 +1697,67 @@
             input.value = '';
             setTimeout(() => input.focus(), 100);
         }
-        function closeNewMatchModal() { document.getElementById('newMatchModal').classList.add('hidden'); }
+        let newMatchHomeAway = '';
+        function toggleHomeAway(val) {
+            newMatchHomeAway = newMatchHomeAway === val ? '' : val;
+            const activeStyle = 'background:rgba(92,224,210,0.25);color:#5ce0d2;border-color:#5ce0d2;';
+            const inactiveStyle = 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.2);';
+            document.getElementById('newMatchHome').style.cssText = newMatchHomeAway === 'home' ? activeStyle : inactiveStyle;
+            document.getElementById('newMatchAway').style.cssText = newMatchHomeAway === 'away' ? activeStyle : inactiveStyle;
+        }
+        function closeNewMatchModal() {
+            document.getElementById('newMatchModal').classList.add('hidden');
+            newMatchHomeAway = '';
+            ['newMatchInput','newMatchDate','newMatchLocation','newMatchCompetition'].forEach(id => document.getElementById(id).value = '');
+            toggleHomeAway('');
+        }
         function confirmNewMatch() {
             const name = document.getElementById('newMatchInput').value.trim();
+            const date = document.getElementById('newMatchDate').value.trim();
+            const location = document.getElementById('newMatchLocation').value.trim();
+            const competition = document.getElementById('newMatchCompetition').value.trim();
+            const homeAway = newMatchHomeAway;
             closeNewMatchModal();
-            matches.push({ events: [], motm: '', opponent: name, scoreSumas: 0, scoreOpp: 0, status: 'pending', poll: { opened: false, closed: false, votes: {}, voters: [], voterNames: [], voterChoices: {} } });
+            matches.push({ events: [], motm: '', opponent: name, scoreSumas: 0, scoreOpp: 0, status: 'pending', date, location, competition, homeAway, poll: { opened: false, closed: false, votes: {}, voters: [], voterNames: [], voterChoices: {} } });
             activeMatch = matches.length - 1;
             saveMatches(); renderMatches();
         }
         document.getElementById('newMatchInput').addEventListener('keydown', e => { if (e.key === 'Enter') confirmNewMatch(); });
+
+        let editMatchHomeAway = '';
+        function toggleEditHomeAway(val) {
+            editMatchHomeAway = editMatchHomeAway === val ? '' : val;
+            const activeStyle = 'background:rgba(92,224,210,0.25);color:#5ce0d2;border-color:#5ce0d2;';
+            const inactiveStyle = 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.2);';
+            document.getElementById('editMatchHome').style.cssText = editMatchHomeAway === 'home' ? activeStyle : inactiveStyle;
+            document.getElementById('editMatchAway').style.cssText = editMatchHomeAway === 'away' ? activeStyle : inactiveStyle;
+        }
+        function openEditMatchInfo(idx) {
+            const m = matches[idx];
+            document.getElementById('editMatchOpponent').value = m.opponent || '';
+            document.getElementById('editMatchDate').value = m.date || '';
+            document.getElementById('editMatchLocation').value = m.location || '';
+            document.getElementById('editMatchCompetition').value = m.competition || '';
+            editMatchHomeAway = m.homeAway || '';
+            const activeStyle = 'background:rgba(92,224,210,0.25);color:#5ce0d2;border-color:#5ce0d2;';
+            const inactiveStyle = 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.2);';
+            document.getElementById('editMatchHome').style.cssText = editMatchHomeAway === 'home' ? activeStyle : inactiveStyle;
+            document.getElementById('editMatchAway').style.cssText = editMatchHomeAway === 'away' ? activeStyle : inactiveStyle;
+            document.getElementById('editMatchInfoModal').classList.remove('hidden');
+            document.getElementById('editMatchInfoModal').dataset.idx = idx;
+        }
+        function closeEditMatchInfoModal() { document.getElementById('editMatchInfoModal').classList.add('hidden'); }
+        function saveEditMatchInfo() {
+            const idx = parseInt(document.getElementById('editMatchInfoModal').dataset.idx);
+            const m = matches[idx];
+            m.opponent = document.getElementById('editMatchOpponent').value.trim();
+            m.date = document.getElementById('editMatchDate').value.trim();
+            m.location = document.getElementById('editMatchLocation').value.trim();
+            m.competition = document.getElementById('editMatchCompetition').value.trim();
+            m.homeAway = editMatchHomeAway;
+            closeEditMatchInfoModal();
+            saveMatches(); renderMatches();
+        }
 
         function selectMatch(idx) { activeMatch = idx; renderMatches(); }
 
@@ -2057,7 +2138,16 @@
                 }
 
                 html += `<div class="match-score-banner">
-                    <div class="match-score-label">Match ${activeMatch + 1} &mdash; Score</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                        <div class="match-score-label" style="margin-bottom:0">Match ${activeMatch + 1}</div>
+                        ${userRole === 'coach' ? `<button onclick="openEditMatchInfo(${activeMatch})" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-size:0.75rem;cursor:pointer">&#9998; Edit Info</button>` : ''}
+                    </div>
+                    <div style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:6px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+                        ${m.date ? `<span>&#128197; ${esc(m.date)}</span>` : ''}
+                        ${m.homeAway ? `<span>${m.homeAway === 'home' ? '&#127968; Home' : '&#9992;&#65039; Away'}</span>` : ''}
+                        ${m.location ? `<span>&#128205; ${esc(m.location)}</span>` : ''}
+                        ${m.competition ? `<span>&#127942; ${esc(m.competition)}</span>` : ''}
+                    </div>
                     <div style="display:flex;align-items:flex-start;justify-content:center;margin:12px 0 6px;gap:0">
                         <div style="text-align:center;flex:1">
                             <div class="score-input" style="display:inline-block;width:110px;font-size:5.6rem;font-weight:900;color:#ff8c00;text-shadow:0 0 30px rgba(255,140,0,0.5),0 0 60px rgba(255,140,0,0.2)">${sSumas}</div>
