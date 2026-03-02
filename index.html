@@ -1451,7 +1451,7 @@
                     if (!Array.isArray(matches)) matches = [];
                 } catch(e) { matches = []; }
             }
-            if (activeMatch < 0 && matches.length > 0) activeMatch = matches.length - 1;
+            if (activeMatch < 0 && matches.length > 0) activeMatch = getLatestMatchIdx();
             try { renderMatches(); } catch(e) {}
             try { if (currentTab === 'votes') renderVotes(); } catch(e) {}
             // Resume live timer if match is ongoing
@@ -1711,6 +1711,18 @@
             input.value = '';
             setTimeout(() => input.focus(), 100);
         }
+        function getLatestMatchIdx() {
+            if (!matches.length) return -1;
+            return matches.reduce((best, m, i) => {
+                const db = matches[best].date || '';
+                const di = m.date || '';
+                if (!di && !db) return i > best ? i : best;
+                if (!di) return best;
+                if (!db) return i;
+                return di > db ? i : best;
+            }, 0);
+        }
+
         function formatDisplayDate(iso) {
             if (!iso) return '';
             const [y, mo, d] = iso.split('-');
@@ -2176,18 +2188,11 @@
                 return;
             }
 
-            // Clamp activeMatch to valid range
-            if (activeMatch < 0 || activeMatch >= matches.length) activeMatch = matches.length - 1;
-
             // Mini tabs - latest match by date stands out, older ones are history
-            const latestIdx = matches.reduce((best, m, i) => {
-                const db = matches[best].date || '';
-                const di = m.date || '';
-                if (!di && !db) return i > best ? i : best;
-                if (!di) return best;
-                if (!db) return i;
-                return di > db ? i : best;
-            }, 0);
+            const latestIdx = getLatestMatchIdx();
+
+            // Default to latest match when no valid selection
+            if (activeMatch < 0 || activeMatch >= matches.length) activeMatch = latestIdx;
             let html = `<div class="match-mini-tabs">`;
 
             // Show history matches sorted chronologically
