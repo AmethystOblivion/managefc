@@ -114,13 +114,15 @@
             box-shadow: 0 8px 40px rgba(0,0,0,0.5);
         }
         .custom-modal-box h3 { color: #fff; margin-bottom: 12px; font-size: 1.1rem; }
-        .custom-modal-box input {
+        .custom-modal-box input, .custom-modal-box select {
             padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25);
             background: rgba(0,0,0,0.25); color: #fff; font-size: 1rem; width: 200px;
             outline: none; text-align: center;
         }
-        .custom-modal-box input:focus { border-color: #5ce0d2; }
+        .custom-modal-box input:focus, .custom-modal-box select:focus { border-color: #5ce0d2; }
         .custom-modal-box input::placeholder { color: rgba(255,255,255,0.4); }
+        .custom-modal-box select option { background: #1a535c; color: #fff; }
+        .custom-modal-box input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
         .custom-modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
         .custom-modal-btns button {
             padding: 10px 22px; border-radius: 8px; border: none;
@@ -1168,12 +1170,18 @@
             <h3>New Match</h3>
             <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
                 <input type="text" id="newMatchInput" placeholder="Opponent name..." autocomplete="off">
-                <input type="text" id="newMatchDate" placeholder="Date (dd/mm/yy)" autocomplete="off" maxlength="8">
+                <input type="date" id="newMatchDate">
                 <div style="display:flex;gap:8px">
                     <button id="newMatchHome" onclick="toggleHomeAway('home')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Home</button>
                     <button id="newMatchAway" onclick="toggleHomeAway('away')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Away</button>
                 </div>
-                <input type="text" id="newMatchLocation" placeholder="Location" autocomplete="off">
+                <select id="newMatchVenueSelect" style="display:none" onchange="onNewVenueSelect()">
+                    <option value="">Select venue...</option>
+                    <option value="Charvil">Charvil</option>
+                    <option value="Cantley">Cantley</option>
+                    <option value="custom">Enter venue</option>
+                </select>
+                <input type="text" id="newMatchVenue" placeholder="Venue" autocomplete="off">
                 <input type="text" id="newMatchCompetition" placeholder="Competition" autocomplete="off">
             </div>
             <div class="custom-modal-btns">
@@ -1188,12 +1196,18 @@
             <h3>Edit Match Info</h3>
             <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
                 <input type="text" id="editMatchOpponent" placeholder="Opponent name..." autocomplete="off">
-                <input type="text" id="editMatchDate" placeholder="Date (dd/mm/yy)" autocomplete="off" maxlength="8">
+                <input type="date" id="editMatchDate">
                 <div style="display:flex;gap:8px">
                     <button id="editMatchHome" onclick="toggleEditHomeAway('home')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Home</button>
                     <button id="editMatchAway" onclick="toggleEditHomeAway('away')" style="flex:1;padding:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s">Away</button>
                 </div>
-                <input type="text" id="editMatchLocation" placeholder="Location" autocomplete="off">
+                <select id="editMatchVenueSelect" style="display:none" onchange="onEditVenueSelect()">
+                    <option value="">Select venue...</option>
+                    <option value="Charvil">Charvil</option>
+                    <option value="Cantley">Cantley</option>
+                    <option value="custom">Enter venue</option>
+                </select>
+                <input type="text" id="editMatchVenue" placeholder="Venue" autocomplete="off">
                 <input type="text" id="editMatchCompetition" placeholder="Competition" autocomplete="off">
             </div>
             <div class="custom-modal-btns">
@@ -1697,6 +1711,41 @@
             input.value = '';
             setTimeout(() => input.focus(), 100);
         }
+        function formatDisplayDate(iso) {
+            if (!iso) return '';
+            const [y, mo, d] = iso.split('-');
+            if (!y || !mo || !d) return iso;
+            return `${d}/${mo}/${y.slice(2)}`;
+        }
+
+        function updateNewVenueVisibility() {
+            const sel = document.getElementById('newMatchVenueSelect');
+            const txt = document.getElementById('newMatchVenue');
+            if (newMatchHomeAway === 'home') {
+                sel.style.display = '';
+                txt.style.display = sel.value === 'custom' ? '' : 'none';
+            } else {
+                sel.style.display = 'none';
+                txt.style.display = '';
+                txt.placeholder = 'Venue';
+            }
+        }
+        function onNewVenueSelect() {
+            const sel = document.getElementById('newMatchVenueSelect');
+            const txt = document.getElementById('newMatchVenue');
+            if (sel.value === 'custom') { txt.style.display = ''; txt.value = ''; txt.focus(); }
+            else { txt.style.display = 'none'; txt.value = sel.value; }
+        }
+        function getNewVenue() {
+            if (newMatchHomeAway === 'home') {
+                const sel = document.getElementById('newMatchVenueSelect');
+                return sel.value === 'custom' || sel.value === ''
+                    ? document.getElementById('newMatchVenue').value.trim()
+                    : sel.value;
+            }
+            return document.getElementById('newMatchVenue').value.trim();
+        }
+
         let newMatchHomeAway = '';
         function toggleHomeAway(val) {
             newMatchHomeAway = newMatchHomeAway === val ? '' : val;
@@ -1704,25 +1753,58 @@
             const inactiveStyle = 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.2);';
             document.getElementById('newMatchHome').style.cssText = newMatchHomeAway === 'home' ? activeStyle : inactiveStyle;
             document.getElementById('newMatchAway').style.cssText = newMatchHomeAway === 'away' ? activeStyle : inactiveStyle;
+            updateNewVenueVisibility();
         }
         function closeNewMatchModal() {
             document.getElementById('newMatchModal').classList.add('hidden');
             newMatchHomeAway = '';
-            ['newMatchInput','newMatchDate','newMatchLocation','newMatchCompetition'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('newMatchInput').value = '';
+            document.getElementById('newMatchDate').value = '';
+            document.getElementById('newMatchVenueSelect').value = '';
+            document.getElementById('newMatchVenue').value = '';
+            document.getElementById('newMatchCompetition').value = '';
             toggleHomeAway('');
         }
         function confirmNewMatch() {
             const name = document.getElementById('newMatchInput').value.trim();
-            const date = document.getElementById('newMatchDate').value.trim();
-            const location = document.getElementById('newMatchLocation').value.trim();
+            const date = document.getElementById('newMatchDate').value;
+            const venue = getNewVenue();
             const competition = document.getElementById('newMatchCompetition').value.trim();
             const homeAway = newMatchHomeAway;
             closeNewMatchModal();
-            matches.push({ events: [], motm: '', opponent: name, scoreSumas: 0, scoreOpp: 0, status: 'pending', date, location, competition, homeAway, poll: { opened: false, closed: false, votes: {}, voters: [], voterNames: [], voterChoices: {} } });
+            matches.push({ events: [], motm: '', opponent: name, scoreSumas: 0, scoreOpp: 0, status: 'pending', date, venue, competition, homeAway, poll: { opened: false, closed: false, votes: {}, voters: [], voterNames: [], voterChoices: {} } });
             activeMatch = matches.length - 1;
             saveMatches(); renderMatches();
         }
         document.getElementById('newMatchInput').addEventListener('keydown', e => { if (e.key === 'Enter') confirmNewMatch(); });
+
+        function updateEditVenueVisibility() {
+            const sel = document.getElementById('editMatchVenueSelect');
+            const txt = document.getElementById('editMatchVenue');
+            if (editMatchHomeAway === 'home') {
+                sel.style.display = '';
+                txt.style.display = sel.value === 'custom' ? '' : 'none';
+            } else {
+                sel.style.display = 'none';
+                txt.style.display = '';
+                txt.placeholder = 'Venue';
+            }
+        }
+        function onEditVenueSelect() {
+            const sel = document.getElementById('editMatchVenueSelect');
+            const txt = document.getElementById('editMatchVenue');
+            if (sel.value === 'custom') { txt.style.display = ''; txt.value = ''; txt.focus(); }
+            else { txt.style.display = 'none'; txt.value = sel.value; }
+        }
+        function getEditVenue() {
+            if (editMatchHomeAway === 'home') {
+                const sel = document.getElementById('editMatchVenueSelect');
+                return sel.value === 'custom' || sel.value === ''
+                    ? document.getElementById('editMatchVenue').value.trim()
+                    : sel.value;
+            }
+            return document.getElementById('editMatchVenue').value.trim();
+        }
 
         let editMatchHomeAway = '';
         function toggleEditHomeAway(val) {
@@ -1731,18 +1813,30 @@
             const inactiveStyle = 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.2);';
             document.getElementById('editMatchHome').style.cssText = editMatchHomeAway === 'home' ? activeStyle : inactiveStyle;
             document.getElementById('editMatchAway').style.cssText = editMatchHomeAway === 'away' ? activeStyle : inactiveStyle;
+            updateEditVenueVisibility();
         }
         function openEditMatchInfo(idx) {
             const m = matches[idx];
+            const venue = m.venue || m.location || '';
             document.getElementById('editMatchOpponent').value = m.opponent || '';
             document.getElementById('editMatchDate').value = m.date || '';
-            document.getElementById('editMatchLocation').value = m.location || '';
             document.getElementById('editMatchCompetition').value = m.competition || '';
             editMatchHomeAway = m.homeAway || '';
+            // Pre-fill venue select/input
+            const sel = document.getElementById('editMatchVenueSelect');
+            const txt = document.getElementById('editMatchVenue');
+            if (editMatchHomeAway === 'home') {
+                if (venue === 'Charvil' || venue === 'Cantley') { sel.value = venue; txt.value = venue; }
+                else if (venue) { sel.value = 'custom'; txt.value = venue; }
+                else { sel.value = ''; txt.value = ''; }
+            } else {
+                txt.value = venue;
+            }
             const activeStyle = 'background:rgba(92,224,210,0.25);color:#5ce0d2;border-color:#5ce0d2;';
             const inactiveStyle = 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.2);';
             document.getElementById('editMatchHome').style.cssText = editMatchHomeAway === 'home' ? activeStyle : inactiveStyle;
             document.getElementById('editMatchAway').style.cssText = editMatchHomeAway === 'away' ? activeStyle : inactiveStyle;
+            updateEditVenueVisibility();
             document.getElementById('editMatchInfoModal').classList.remove('hidden');
             document.getElementById('editMatchInfoModal').dataset.idx = idx;
         }
@@ -1751,8 +1845,8 @@
             const idx = parseInt(document.getElementById('editMatchInfoModal').dataset.idx);
             const m = matches[idx];
             m.opponent = document.getElementById('editMatchOpponent').value.trim();
-            m.date = document.getElementById('editMatchDate').value.trim();
-            m.location = document.getElementById('editMatchLocation').value.trim();
+            m.date = document.getElementById('editMatchDate').value;
+            m.venue = getEditVenue();
             m.competition = document.getElementById('editMatchCompetition').value.trim();
             m.homeAway = editMatchHomeAway;
             closeEditMatchInfoModal();
@@ -2089,10 +2183,19 @@
             const latestIdx = matches.length - 1;
             let html = `<div class="match-mini-tabs">`;
 
-            // Show history matches first (older ones)
+            // Show history matches sorted chronologically
             if (matches.length > 1) {
                 html += `<span class="match-history-label">History:</span>`;
-                for (let i = 0; i < latestIdx; i++) {
+                const historyIndices = Array.from({length: latestIdx}, (_, i) => i)
+                    .sort((a, b) => {
+                        const da = matches[a].date || '';
+                        const db = matches[b].date || '';
+                        if (!da && !db) return a - b;
+                        if (!da) return -1;
+                        if (!db) return 1;
+                        return da < db ? -1 : da > db ? 1 : 0;
+                    });
+                for (const i of historyIndices) {
                     const m2 = matches[i];
                     const label = m2.opponent ? `vs ${esc(m2.opponent)}` : `Match ${i + 1}`;
                     const score2 = getMatchScore(m2);
@@ -2143,9 +2246,9 @@
                         ${userRole === 'coach' ? `<button onclick="openEditMatchInfo(${activeMatch})" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-size:0.75rem;cursor:pointer">&#9998; Edit Info</button>` : ''}
                     </div>
                     <div style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:6px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
-                        ${m.date ? `<span>&#128197; ${esc(m.date)}</span>` : ''}
+                        ${m.date ? `<span>&#128197; ${esc(formatDisplayDate(m.date))}</span>` : ''}
                         ${m.homeAway ? `<span>${m.homeAway === 'home' ? '&#127968; Home' : '&#9992;&#65039; Away'}</span>` : ''}
-                        ${m.location ? `<span>&#128205; ${esc(m.location)}</span>` : ''}
+                        ${(m.venue || m.location) ? `<span>&#128205; ${esc(m.venue || m.location)}</span>` : ''}
                         ${m.competition ? `<span>&#127942; ${esc(m.competition)}</span>` : ''}
                     </div>
                     <div style="display:flex;align-items:flex-start;justify-content:center;margin:12px 0 6px;gap:0">
